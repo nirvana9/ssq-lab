@@ -88,6 +88,16 @@ def parse_sichuan_html(
             "poolmoney": re.sub(r"\D", "", pool_match.group(1)) if pool_match else "",
         })
 
+    # Some page layouts render all ten draw cards first and the detailed
+    # sales/pool blocks afterward. In that case, align those lists by page order.
+    sales_values = [re.sub(r"\\D", "", value) for value in SALES_RE.findall(text)]
+    pool_values = [re.sub(r"\\D", "", value) for value in POOL_RE.findall(text)]
+    for index, record in enumerate(raw_records):
+        if not record["sales"] and index < len(sales_values):
+            record["sales"] = sales_values[index]
+        if not record["poolmoney"] and index < len(pool_values):
+            record["poolmoney"] = pool_values[index]
+
     raw_records.sort(key=lambda row: row["draw_date"])
     result: dict[str, dict[str, Any]] = {}
     for record in raw_records:
