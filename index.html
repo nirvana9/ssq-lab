@@ -24,7 +24,7 @@
       </nav>
       <div class="sidebar-bottom">
         <div class="source-state"><i id="sourceDot"></i><span id="sourceState">等待数据同步</span></div>
-        <div class="sidebar-note">数据来源：中国福彩网<br>本地运行 · SQLite 持久化</div>
+        <div class="sidebar-note">数据来源：<span id="dataSourceLabel">多源数据</span><br>云端只读 · 本地版 SQLite 可写</div>
         <a class="github-link" href="https://github.com/nirvana9/ssq-lab" target="_blank" rel="noreferrer">⌘ GitHub 仓库 ↗</a>
       </div>
     </aside>
@@ -121,7 +121,7 @@
         <div class="tickets-layout"><div class="panel-card"><div class="panel-title"><div><h3>我的号码</h3><p>号码仅保存在当前浏览器本地</p></div></div><textarea id="ticketInput" placeholder="每行一注：\n05 11 12 17 19 29 + 02\n05 06 10 15 18 24 + 09"></textarea><div class="ticket-actions"><button class="btn btn-primary" id="saveTicketsBtn">保存号码</button><button class="btn btn-ghost" id="addPicksBtn">加入最近生成结果</button><button class="btn btn-ghost" id="clearTicketsBtn">清空</button></div><p class="field-footnote">格式：6 个不重复红球（01–33）+ 1 个蓝球（01–16）。</p></div><div class="panel-card"><div class="panel-title"><div><h3>最近一期对奖</h3><p id="ticketCompareTitle">请先保存号码并同步最新开奖</p></div></div><div id="ticketCompare" class="empty-state compact"><div class="empty-symbol">♡</div><strong>等待号码</strong><span>保存号码后自动与最新一期比较</span></div></div></div>
       </section>
 
-      <footer class="footer"><span>SSQ Lab v2.0.0</span><span>仅供数据分析与学习研究 · 不构成投注建议</span><span>数据源：<a href="https://www.cwl.gov.cn/ygkj/wqkjgg/ssq/" target="_blank" rel="noreferrer">中国福彩网 ↗</a></span></footer>
+      <footer class="footer"><span>SSQ Lab v2.0.0</span><span>仅供数据分析与学习研究 · 不构成投注建议</span><span>数据源：<a href="https://www.scflcp.com.cn/ssq" target="_blank" rel="noreferrer">四川福彩（近期）</a> · <a href="https://github.com/wangdaodao/DoubleColorBall" target="_blank" rel="noreferrer">历史镜像 ↗</a></span></footer>
     </main>
   </div>
   <div class="toast" id="toast" role="status"></div>
