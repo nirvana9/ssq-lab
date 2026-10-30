@@ -45,11 +45,53 @@ class EdgeOneApiTests(unittest.TestCase):
         self.assertTrue({"/status", "/draws", "/sync", "/analysis", "/backtest", "/picks", "/export.csv"}.issubset(paths))
         self.assertNotIn("/api/status", paths)
 
-    def test_status_reports_empty_data_without_database(self):
+    def test_status_reports_bundled_data_without_database(self):
+        from draws_data import DRAW_DATA
+
         result = self.module.status()
-        self.assertEqual(result["draw_count"], 0)
-        self.assertIsNone(result["latest"])
-        self.assertEqual(result["source"], "中国福利彩票发行管理中心（cwl.gov.cn）")
+        self.assertEqual(result["draw_count"], len(DRAW_DATA["draws"]))
+        self.assertEqual(result["latest"], DRAW_DATA["draws"][-1] if DRAW_DATA["draws"] else None)
+        self.assertEqual(result["source"], DRAW_DATA["source_label"])
+
+    def test_history_bundle_is_sorted_unique_and_legal(self):
+        from draws_data import DRAW_DATA
+
+        rows = DRAW_DATA["draws"]
+        issues = [row["issue"] for row in rows]
+        self.assertEqual(issues, sorted(issues))
+        self.assertEqual(len(issues), len(set(issues)))
+        for row in rows:
+            self.assertEqual(len(row["red"]), 6)
+            self.assertEqual(len(set(row["red"])), 6)
+            self.assertTrue(all(1 <= n <= 33 for n in row["red"]))
+            self.assertTrue(1 <= row["blue"] <= 16)
+            self.assertEqual(row["issue"][:4], row["draw_date"][:4])
+
+    def test_read_only_api_supports_analysis_picks_and_backtest(self):
+        from draws_data import DRAW_DATA
+
+        if not DRAW_DATA["draws"]:
+            self.skipTest("No published draw data yet")
+        latest = DRAW_DATA["draws"][-1]
+        listed = self.module.get_draws(limit=5, order="desc")
+        self.assertEqual(listed["draws"][0]["issue"], latest["issue"])
+
+        stats = self.module.get_analysis(window=30)
+        self.assertEqual(stats["count"], len(DRAW_DATA["draws"]))
+        self.assertEqual(stats["window"], 30)
+
+        picks = self.module.get_picks(self.module.PickPayload(
+            count=2, mode="random", window=50, sum_min=21, sum_max=183,
+            use_filters=False,
+        ))
+        self.assertEqual(len(picks["picks"]), 2)
+        for pick in picks["picks"]:
+            self.assertEqual(len(pick["red"]), 6)
+            self.assertTrue(1 <= pick["blue"] <= 16)
+
+        backtest = self.module.get_backtest(window=50, warmup=100)
+        self.assertEqual(len(backtest["results"]), 4)
+        self.assertGreater(backtest["sample_count"], 0)
 
 
 if __name__ == "__main__":
