@@ -19,6 +19,7 @@ on:
       - "app/sources/cwl.py"
       - "app/sources/github_mirror.py"
       - "app/sources/sichuan_fucai.py"
+      - "app/sources/manager.py"
       - ".github/workflows/sync-edgeone-data.yml"
 
 permissions:
