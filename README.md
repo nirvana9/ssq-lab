@@ -153,7 +153,7 @@ MIT
 6. 部署完成后，在 Preview 环境打开生成的预览域名。
 
 官方文档：
-- [导入 Git 仓库](https://pages.edgeone.ai/document/import-git-repository)
+- [导入 Git 仓库](https://pages.edgeone.ai/document/importing-a-git-repository)
 - [Python Cloud Functions](https://pages.edgeone.ai/document/python)
 - [构建配置](https://pages.edgeone.ai/document/build-guide)
 
