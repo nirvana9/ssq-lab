@@ -16,37 +16,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.sources.cwl import CwlProvider, SourceError, normalize_record
-from app.sources.github_mirror import GitHubMirrorProvider
-from app.sources.sichuan_fucai import SichuanFucaiProvider
+from app.sources.cwl import SourceError
+from app.sources.manager import fetch_with_fallback, merge_draws
 
 DEFAULT_OUTPUT = ROOT / "cloud-functions" / "draws_data.py"
-
-
-def _normalize_draw(row: dict[str, Any]) -> dict[str, Any]:
-    """Validate a normalized draw again before it enters the deploy bundle."""
-    return normalize_record({
-        "issue": row.get("issue"),
-        "date": row.get("draw_date") or row.get("date"),
-        "red": row.get("red"),
-        "blue": row.get("blue"),
-        "sales": row.get("sales"),
-        "poolmoney": row.get("poolmoney"),
-        "prizegrades": row.get("prizegrades") or [],
-        "source": row.get("source") or "cwl.gov.cn",
-    })
-
-
-def merge_draws(existing: list[dict[str, Any]], incoming: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Merge by issue; incoming records replace older versions of the same issue."""
-    merged: dict[str, dict[str, Any]] = {}
-    for row in existing:
-        normalized = _normalize_draw(row)
-        merged[normalized["issue"]] = normalized
-    for row in incoming:
-        normalized = _normalize_draw(row)
-        merged[normalized["issue"]] = normalized
-    return [merged[issue] for issue in sorted(merged)]
 
 
 def render_data_module(payload: dict[str, Any]) -> str:
@@ -115,33 +88,13 @@ def main() -> int:
         mode = "full" if args.full or not existing else "incremental"
         latest_date = existing[-1].get("draw_date") if existing else None
         print(f"数据同步模式：{mode}")
-        try:
-            incoming = CwlProvider().fetch(mode=mode, latest_date=latest_date)
-        except SourceError as official_error:
-            print(
-                f"中国福彩网官方接口暂不可用：{official_error}；改用 GitHub 历史镜像并用四川省福彩官网核对近期数据。",
-                file=sys.stderr,
-            )
-            try:
-                mirror_rows = GitHubMirrorProvider().fetch()
-                base_rows = merge_draws(existing, mirror_rows)
-                try:
-                    official_recent = SichuanFucaiProvider().fetch(existing_draws=base_rows)
-                    incoming = merge_draws(base_rows, official_recent)
-                except SourceError as recent_error:
-                    print(
-                        f"四川省福彩近期数据暂不可用，保留已验证的 GitHub 历史镜像：{recent_error}",
-                        file=sys.stderr,
-                    )
-                    incoming = base_rows
-            except SourceError as fallback_error:
-                raise SourceError(
-                    f"中国福彩网官方源失败：{official_error}；GitHub 历史镜像也失败：{fallback_error}"
-                ) from fallback_error
-        if not incoming:
+        merged = fetch_with_fallback(
+            mode=mode,
+            latest_date=latest_date,
+            existing=existing,
+        )
+        if not merged:
             raise SourceError("数据源未返回可校验的开奖记录；保留现有数据。")
-
-        merged = merge_draws(existing, incoming)
         if merged == existing:
             print(f"数据未变化：本地仍为 {len(existing)} 期，最新期号 {existing[-1]['issue'] if existing else '无'}。")
             return 0
@@ -163,8 +116,10 @@ def main() -> int:
             "draws": merged,
         }
         write_bundle(payload, args.output)
+        old_by_issue = {row["issue"]: row for row in existing}
+        changed_count = sum(1 for row in merged if old_by_issue.get(row["issue"]) != row)
         print(
-            f"数据更新完成：本次抓取 {len(incoming)} 期，合并后 {len(merged)} 期，"
+            f"数据更新完成：新增/修正 {changed_count} 期，合并后 {len(merged)} 期，"
             f"最新期号 {payload['latest_issue']}。"
         )
         return 0
