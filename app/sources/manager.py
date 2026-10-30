@@ -43,9 +43,10 @@ def fetch_with_fallback(
     try:
         official_rows = CwlProvider().fetch(mode=mode, latest_date=latest_date)
         return merge_draws(existing, official_rows)
-    except SourceError as official_error:
+    except SourceError as exc:
+        official_error_text = str(exc)
         print(
-            f"中国福彩网官方接口暂不可用：{official_error}；改用 GitHub 历史镜像并用四川省福彩官网核对近期数据。",
+            f"中国福彩网官方接口暂不可用：{official_error_text}；改用 GitHub 历史镜像并用四川省福彩官网核对近期数据。",
             file=sys.stderr,
         )
 
@@ -54,7 +55,7 @@ def fetch_with_fallback(
         base_rows = merge_draws(existing, mirror_rows)
     except SourceError as mirror_error:
         raise SourceError(
-            f"中国福彩网官方源失败：{official_error}；GitHub 历史镜像也失败：{mirror_error}"
+            f"中国福彩网官方源失败：{official_error_text}；GitHub 历史镜像也失败：{mirror_error}"
         ) from mirror_error
 
     try:
