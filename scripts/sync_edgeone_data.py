@@ -60,9 +60,9 @@ def render_data_module(payload: dict[str, Any]) -> str:
     serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     return (
         '"""Generated, read-only lottery history bundle for EdgeOne Makers. '
-        'Do not hand-edit draw records."""\\n\\n'
-        "import json\\n\\n"
-        f"DRAW_DATA = json.loads({serialized!r})\\n"
+        'Do not hand-edit draw records."""\n\n'
+        "import json\n\n"
+        f"DRAW_DATA = json.loads({serialized!r})\n"
     )
 
 
@@ -76,7 +76,7 @@ def write_bundle(payload: dict[str, Any], output: Path = DEFAULT_OUTPUT) -> None
         dir=str(output.parent),
     )
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\\n") as handle:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(source)
             handle.flush()
             os.fsync(handle.fileno())
