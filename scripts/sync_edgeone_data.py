@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.sources.cwl import CwlProvider, SourceError, normalize_record
+from app.sources.fivehundred import FiveHundredProvider
 
 DEFAULT_OUTPUT = ROOT / "cloud-functions" / "draws_data.py"
 
@@ -91,8 +92,9 @@ def write_bundle(payload: dict[str, Any], output: Path = DEFAULT_OUTPUT) -> None
 
 def load_existing_bundle(path: Path = DEFAULT_OUTPUT) -> dict[str, Any]:
     if not path.exists():
-        return {"schema_version": 1, "source": "cwl.gov.cn", "updated_at": None,
-                "latest_issue": None, "draws": []}
+        return {"schema_version": 1, "source": "cwl.gov.cn",
+                "source_label": "中国福利彩票发行管理中心（cwl.gov.cn）",
+                "updated_at": None, "latest_issue": None, "draws": []}
     namespace = runpy.run_path(str(path))
     payload = namespace.get("DRAW_DATA")
     if not isinstance(payload, dict) or not isinstance(payload.get("draws"), list):
@@ -112,18 +114,37 @@ def main() -> int:
         mode = "full" if args.full or not existing else "incremental"
         latest_date = existing[-1].get("draw_date") if existing else None
         print(f"数据同步模式：{mode}")
-        incoming = CwlProvider().fetch(mode=mode, latest_date=latest_date)
+        try:
+            incoming = CwlProvider().fetch(mode=mode, latest_date=latest_date)
+        except SourceError as official_error:
+            print(
+                f"中国福彩网官方接口暂不可用：{official_error}；切换到 500.com 历史数据备用源。",
+                file=sys.stderr,
+            )
+            try:
+                incoming = FiveHundredProvider().fetch(mode=mode, latest_date=latest_date)
+            except SourceError as fallback_error:
+                raise SourceError(
+                    f"官方源失败：{official_error}；500.com 备用源也失败：{fallback_error}"
+                ) from fallback_error
         if not incoming:
-            raise SourceError("官方接口未返回可校验的开奖记录；保留现有数据。")
+            raise SourceError("数据源未返回可校验的开奖记录；保留现有数据。")
 
         merged = merge_draws(existing, incoming)
         if merged == existing:
             print(f"数据未变化：本地仍为 {len(existing)} 期，最新期号 {existing[-1]['issue'] if existing else '无'}。")
             return 0
 
+        sources = sorted({row.get("source", "cwl.gov.cn") for row in merged})
+        labels = {
+            "cwl.gov.cn": "中国福利彩票官方接口",
+            "datachart.500.com": "500彩票网历史数据（第三方）",
+        }
         payload = {
             "schema_version": 1,
-            "source": "cwl.gov.cn",
+            "source": sources[0] if len(sources) == 1 else "mixed",
+            "sources": sources,
+            "source_label": " + ".join(labels.get(source, source) for source in sources),
             "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "latest_issue": merged[-1]["issue"],
             "draws": merged,
