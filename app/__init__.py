@@ -1,0 +1,1 @@
+"""SSQ Lab application package."""
