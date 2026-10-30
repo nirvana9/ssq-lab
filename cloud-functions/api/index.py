@@ -56,6 +56,7 @@ def status() -> dict[str, Any]:
         "last_sync": DRAW_DATA.get("updated_at"),
         "last_sync_mode": "github-actions",
         "last_sync_count": len(rows),
+        "data_as_of": DRAW_DATA.get("data_as_of") or (latest.get("draw_date") if latest else None),
         "source": DRAW_DATA.get("source_label") or "中国福利彩票发行管理中心（cwl.gov.cn）",
         "sources": DRAW_DATA.get("sources") or [DRAW_DATA.get("source", "cwl.gov.cn")],
         "source_url": "https://www.cwl.gov.cn/ygkj/wqkjgg/ssq/",
