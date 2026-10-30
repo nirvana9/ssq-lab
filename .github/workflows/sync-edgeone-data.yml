@@ -1,0 +1,62 @@
+name: Sync SSQ history for EdgeOne Makers
+
+on:
+  schedule:
+    - cron: "30 14 * * *"
+  workflow_dispatch:
+    inputs:
+      full_sync:
+        description: "从 2003 年开始全量同步"
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches:
+      - main
+      - feat/edgeone-makers-deploy
+    paths:
+      - "scripts/sync_edgeone_data.py"
+      - "app/sources/cwl.py"
+      - ".github/workflows/sync-edgeone-data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssq-history-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install scraper dependency
+        run: python -m pip install --upgrade pip requests
+      - name: Fetch and validate official history
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.full_sync }}" == "true" ]]; then
+            python scripts/sync_edgeone_data.py --full
+          else
+            python scripts/sync_edgeone_data.py
+          fi
+      - name: Commit changed data bundle
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cloud-functions/draws_data.py
+          if git diff --cached --quiet; then
+            echo "No draw data changes; skipping commit."
+          else
+            git commit -m "data: sync official SSQ draw history"
+            git push
+          fi
