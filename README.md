@@ -145,7 +145,7 @@ MIT
 
 ### 部署方式
 
-1. 登录 [EdgeOne Makers 控制台](https://pages.edgeone.ai/) 并选择导入 Git 仓库。
+1. 登录 [EdgeOne Makers 控制台](https://console.tencentcloud.com/edgeone/makers) 并选择导入 Git 仓库。
 2. 选择 GitHub 仓库：`nirvana9/ssq-lab`。
 3. 将 `main` 作为 Production 分支；功能分支（包括 `feat/edgeone-makers-deploy`）用于 Preview 环境。
 4. 构建根目录使用仓库根目录 `./`，静态输出目录使用 `./`，无需前端构建命令。
