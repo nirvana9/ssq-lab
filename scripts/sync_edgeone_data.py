@@ -17,7 +17,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.sources.cwl import CwlProvider, SourceError, normalize_record
-from app.sources.fivehundred import FiveHundredProvider
+from app.sources.github_mirror import GitHubMirrorProvider
+from app.sources.sichuan_fucai import SichuanFucaiProvider
 
 DEFAULT_OUTPUT = ROOT / "cloud-functions" / "draws_data.py"
 
@@ -118,14 +119,24 @@ def main() -> int:
             incoming = CwlProvider().fetch(mode=mode, latest_date=latest_date)
         except SourceError as official_error:
             print(
-                f"中国福彩网官方接口暂不可用：{official_error}；切换到 500.com 历史数据备用源。",
+                f"中国福彩网官方接口暂不可用：{official_error}；改用 GitHub 历史镜像并用四川省福彩官网核对近期数据。",
                 file=sys.stderr,
             )
             try:
-                incoming = FiveHundredProvider().fetch(mode=mode, latest_date=latest_date)
+                mirror_rows = GitHubMirrorProvider().fetch()
+                base_rows = merge_draws(existing, mirror_rows)
+                try:
+                    official_recent = SichuanFucaiProvider().fetch(existing_draws=base_rows)
+                    incoming = merge_draws(base_rows, official_recent)
+                except SourceError as recent_error:
+                    print(
+                        f"四川省福彩近期数据暂不可用，保留已验证的 GitHub 历史镜像：{recent_error}",
+                        file=sys.stderr,
+                    )
+                    incoming = base_rows
             except SourceError as fallback_error:
                 raise SourceError(
-                    f"官方源失败：{official_error}；500.com 备用源也失败：{fallback_error}"
+                    f"中国福彩网官方源失败：{official_error}；GitHub 历史镜像也失败：{fallback_error}"
                 ) from fallback_error
         if not incoming:
             raise SourceError("数据源未返回可校验的开奖记录；保留现有数据。")
@@ -138,7 +149,8 @@ def main() -> int:
         sources = sorted({row.get("source", "cwl.gov.cn") for row in merged})
         labels = {
             "cwl.gov.cn": "中国福利彩票官方接口",
-            "datachart.500.com": "500彩票网历史数据（第三方）",
+            "github.com/wangdaodao/DoubleColorBall": "GitHub 历史数据镜像（MIT 许可）",
+            "scflcp.com.cn": "四川省福利彩票发行中心官方页面",
         }
         payload = {
             "schema_version": 1,
