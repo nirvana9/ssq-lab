@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,11 +41,11 @@ def main() -> int:
             "scflcp.com.cn": "四川省福利彩票发行中心官方页面",
         }
         source_label = " + ".join(labels.get(source, source) for source in sources)
-        database.set_meta("last_sync", __import__("datetime").datetime.now().astimezone().isoformat(timespec="seconds"))
+        database.set_meta("last_sync", datetime.now().astimezone().isoformat(timespec="seconds"))
         database.set_meta("last_sync_mode", mode)
         database.set_meta("last_sync_count", str(len(changed_rows)))
         database.set_meta("source_label", source_label)
-        database.set_meta("sources", __import__("json").dumps(sources, ensure_ascii=False))
+        database.set_meta("sources", json.dumps(sources, ensure_ascii=False))
         print(f"新增/修正 {len(changed_rows)} 期，数据库写入/更新 {changed} 条。")
         print(f"本地共 {database.count_draws()} 期。最新：{database.latest_draw()['issue']}。数据源：{source_label}")
         return 0
