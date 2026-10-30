@@ -158,6 +158,7 @@ def main() -> int:
             "sources": sources,
             "source_label": " + ".join(labels.get(source, source) for source in sources),
             "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "data_as_of": merged[-1]["draw_date"],
             "latest_issue": merged[-1]["issue"],
             "draws": merged,
         }
