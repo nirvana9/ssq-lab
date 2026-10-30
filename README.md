@@ -177,7 +177,7 @@ Makers 云端版本的历史数据为只读；CSV 导入和 SQLite 持久化仍�
 
 GitHub Actions 工作流：`.github/workflows/sync-edgeone-data.yml`
 
-- 每天北京时间 22:30 自动检查中国福彩网数据（GitHub 定时任务可能延迟）。
+- 每天北京时间 22:30 自动检查开奖数据（GitHub 定时任务可能延迟）：优先中国福彩网官方接口；若官方站点对 GitHub Actions 返回 403，则自动切换到 500.com 第三方历史数据源。
 - 支持 Actions 页面手动触发；勾选 full_sync 可执行全量同步。
 - 首次空数据时自动全量抓取，后续按最近 45 天增量抓取。
 - 按期号去重并校验红球、蓝球和开奖日期。
