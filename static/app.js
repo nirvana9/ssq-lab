@@ -68,7 +68,7 @@ function renderRecent() {
 async function syncData(mode = 'incremental') {
   const btns = [$('syncBtn'), $('manualSyncBtn')].filter(Boolean);
   btns.forEach(b => { b.disabled = true; b.dataset.oldText = b.innerHTML; b.innerHTML = '同步中…'; });
-  $('sourceState').textContent = '正在同步开奖数据…';
+  $('sourceState').textContent = '正在读取已发布数据…';
   try {
     const result = await api(`/api/sync?mode=${mode}`, { method: 'POST' });
     toast(result.message || '数据同步完成');
