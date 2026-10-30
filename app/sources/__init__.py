@@ -1,0 +1,1 @@
+"""Lottery data source adapters."""
