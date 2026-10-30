@@ -8,7 +8,7 @@
 
 ## 功能
 
-- **官方数据同步**：从中国福利彩票发行管理中心公开开奖接口获取数据；首次尝试全量同步，之后按最近 45 天增量同步。
+- **多源历史数据同步**：优先尝试中国福彩网官方接口；若 GitHub Actions 出口被官方站点返回 403，则使用 MIT 许可的 GitHub 历史镜像获取全量数据，并用四川省福利彩票发行中心官网核对最近 10 期开奖。每期保留真实来源字段。
 - **数据校验**：校验期号、开奖日期、6 个不重复红球（01–33）和 1 个蓝球（01–16）；异常数据不会写入数据库。
 - **SQLite 本地数据库**：按期号唯一键 upsert，重复同步不会重复插入；数据保存在 `data/ssq_lab.db`。
 - **统计分析**：红蓝球频次、冷热排行、当前遗漏、和值、奇偶比、三区比、跨度。
@@ -177,14 +177,14 @@ Makers 云端版本的历史数据为只读；CSV 导入和 SQLite 持久化仍�
 
 GitHub Actions 工作流：`.github/workflows/sync-edgeone-data.yml`
 
-- 每天北京时间 22:30 自动检查开奖数据（GitHub 定时任务可能延迟）：优先中国福彩网官方接口；若官方站点对 GitHub Actions 返回 403，则自动切换到 500.com 第三方历史数据源。
+- 每天北京时间 22:30 自动检查开奖数据（GitHub 定时任务可能延迟）：优先中国福彩网官方接口；若官方站点对 GitHub Actions 返回 403，则从 MIT 许可的 GitHub 历史镜像拉取全量数据，并使用四川省福利彩票发行中心官网覆盖/核对最近 10 期。
 - 支持 Actions 页面手动触发；勾选 full_sync 可执行全量同步。
 - 首次空数据时自动全量抓取，后续按最近 45 天增量抓取。
 - 按期号去重并校验红球、蓝球和开奖日期。
 - 只有数据发生变化时才提交 `cloud-functions/draws_data.py`；同步失败不会覆盖旧数据。
 - 数据提交后，已连接 GitHub 的 Makers 项目会按分支自动重新部署。
 
-当前数据包初始为空，首次真实历史数据需要等待数据同步工作流成功。不要将测试夹具当作真实开奖记录。
+当前分支已同步 3,521 期真实历史记录，最新为 2026124（2026-10-29）。后续由 GitHub Actions 自动更新。测试夹具仅用于单元测试，不会进入真实数据包。
 
 ### 本地检查 Makers 版本
 
@@ -192,3 +192,6 @@ GitHub Actions 工作流：`.github/workflows/sync-edgeone-data.yml`
 python -m unittest discover -s tests -v
 python -m compileall -q app cloud-functions scripts
 ```
+
+
+数据源说明与第三方许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。四川福彩近期开奖页面：[scflcp.com.cn/ssq](https://www.scflcp.com.cn/ssq)。
