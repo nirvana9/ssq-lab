@@ -11,7 +11,7 @@
 
 ## 2. 从 GitHub 导入
 
-1. 登录 EdgeOne Makers 控制台。
+1. 登录 [EdgeOne Makers 控制台](https://console.tencentcloud.com/edgeone/makers)。
 2. 首次使用时启用 Makers，并连接 GitHub、授权访问 nirvana9/ssq-lab。
 3. 导入仓库 https://github.com/nirvana9/ssq-lab。
 4. Production 环境使用 main 分支；Preview 环境使用非生产分支。当前适配分支为 feat/edgeone-makers-deploy。
