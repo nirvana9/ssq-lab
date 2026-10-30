@@ -44,7 +44,7 @@ async function loadStatus() {
   $('latestIssue').textContent = s.latest ? `第 ${s.latest.issue} 期` : '等待同步数据';
   $('latestDate').textContent = s.latest?.draw_date || '—';
   $('latestBalls').innerHTML = s.latest ? ballsHtml(s.latest.red, s.latest.blue) : '<span class="empty-inline">同步后显示开奖号码</span>';
-  $('syncTime').textContent = s.last_sync ? `上次同步 ${new Date(s.last_sync).toLocaleString()}` : '尚未同步';
+  $('syncTime').textContent = s.last_sync ? `数据更新于 ${new Date(s.last_sync).toLocaleString()}` : '尚未同步';
   $('sourceState').textContent = s.draw_count ? `已载入 ${s.draw_count} 期` : '等待数据同步';
   const sourceLabel = $('dataSourceLabel');
   if (sourceLabel) sourceLabel.textContent = s.source || '—';
