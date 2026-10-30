@@ -35,7 +35,7 @@ class FiveHundredParserTests(unittest.TestCase):
         self.assertEqual(rows[0]["source"], "datachart.500.com")
 
     def test_rejects_rows_with_invalid_ball_values(self):
-        invalid = SAMPLE_HTML.replace("<td>33</td>", "<td>39</td>")
+        invalid = SAMPLE_HTML.replace("<td>29</td>", "<td>39</td>")
         rows = parse_history_html(invalid)
         self.assertEqual(rows, [])
 
