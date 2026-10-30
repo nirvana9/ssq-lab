@@ -137,3 +137,58 @@ ssq-lab/
 ## License
 
 MIT
+
+
+## EdgeOne Makers 部署（预览环境）
+
+仓库同时包含 EdgeOne Makers 版本，保留本地 FastAPI + SQLite 版本。Makers 使用根目录静态页面和 Python Cloud Functions，不在函数实例中写 SQLite。
+
+### 部署方式
+
+1. 登录 [EdgeOne Makers 控制台](https://pages.edgeone.ai/) 并选择导入 Git 仓库。
+2. 选择 GitHub 仓库：`nirvana9/ssq-lab`。
+3. 将 `main` 作为 Production 分支；功能分支（包括 `feat/edgeone-makers-deploy`）用于 Preview 环境。
+4. 构建根目录使用仓库根目录 `./`，静态输出目录使用 `./`，无需前端构建命令。
+5. Python Cloud Functions 运行时选择 Python 3.10。Makers 会自动识别 `cloud-functions/api/index.py` 并映射为 `/api` 路由。
+6. 部署完成后，在 Preview 环境打开生成的预览域名。
+
+官方文档：
+- [导入 Git 仓库](https://pages.edgeone.ai/document/import-git-repository)
+- [Python Cloud Functions](https://pages.edgeone.ai/document/python)
+- [构建配置](https://pages.edgeone.ai/document/build-guide)
+
+### Makers 版本的 API
+
+| 方法 | 外部路径 | 用途 |
+|---|---|---|
+| GET | `/api/status` | 数据状态、最新开奖和数据更新时间 |
+| GET | `/api/draws` | 查询历史开奖 |
+| POST | `/api/sync` | 重新读取当前已部署数据版本；不直接抓取官网 |
+| GET | `/api/analysis` | 统计分析 |
+| GET | `/api/backtest` | 历史回测 |
+| POST | `/api/picks` | 生成号码组合 |
+| GET | `/api/export.csv` | 导出历史数据 |
+
+Makers 会自动剥离文件系统路由前缀 `/api`，因此 FastAPI 内部路由定义为 `/status`、`/draws` 等相对路径。
+
+Makers 云端版本的历史数据为只读；CSV 导入和 SQLite 持久化仍在本地版使用。个人号码保存在浏览器 localStorage。
+
+### 自动同步开奖数据
+
+GitHub Actions 工作流：`.github/workflows/sync-edgeone-data.yml`
+
+- 每天北京时间 22:30 自动检查中国福彩网数据（GitHub 定时任务可能延迟）。
+- 支持 Actions 页面手动触发；勾选 full_sync 可执行全量同步。
+- 首次空数据时自动全量抓取，后续按最近 45 天增量抓取。
+- 按期号去重并校验红球、蓝球和开奖日期。
+- 只有数据发生变化时才提交 `cloud-functions/draws_data.py`；同步失败不会覆盖旧数据。
+- 数据提交后，已连接 GitHub 的 Makers 项目会按分支自动重新部署。
+
+当前数据包初始为空，首次真实历史数据需要等待数据同步工作流成功。不要将测试夹具当作真实开奖记录。
+
+### 本地检查 Makers 版本
+
+```bash
+python -m unittest discover -s tests -v
+python -m compileall -q app cloud-functions scripts
+```
