@@ -13,7 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import analysis, database
-from .sources.cwl import CwlProvider, SourceError, normalize_record
+from .sources.cwl import SourceError, normalize_record
+from .sources.manager import fetch_with_fallback
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -58,7 +59,8 @@ def status() -> dict[str, Any]:
         "last_sync": database.get_meta("last_sync"),
         "last_sync_mode": database.get_meta("last_sync_mode"),
         "last_sync_count": database.get_meta("last_sync_count"),
-        "source": "中国福利彩票发行管理中心（cwl.gov.cn）",
+        "source": database.get_meta("source_label") or "中国福利彩票发行管理中心（cwl.gov.cn）",
+        "sources": json.loads(database.get_meta("sources") or "[]"),
         "source_url": "https://www.cwl.gov.cn/ygkj/wqkjgg/ssq/",
     }
 
@@ -71,19 +73,29 @@ def draws(limit: int = Query(default=100, ge=1, le=10000), order: str = "desc") 
 
 @app.post("/api/sync")
 def sync(mode: str = Query(default="incremental", pattern="^(incremental|full)$")) -> dict[str, Any]:
-    latest = database.latest_draw()
-    latest_date = latest["draw_date"] if latest else None
-    provider = CwlProvider()
+    existing = database.list_draws()
+    latest_date = existing[-1]["draw_date"] if existing else None
     try:
-        rows = provider.fetch(mode=mode, latest_date=latest_date)
-        changed = database.upsert_draws(rows)
+        rows = fetch_with_fallback(mode=mode, latest_date=latest_date, existing=existing)
+        old_by_issue = {row["issue"]: row for row in existing}
+        changed_rows = [row for row in rows if old_by_issue.get(row["issue"]) != row]
+        changed = database.upsert_draws(changed_rows)
+        sources = sorted({row.get("source", "cwl.gov.cn") for row in rows})
+        labels = {
+            "cwl.gov.cn": "中国福利彩票官方接口",
+            "github.com/wangdaodao/DoubleColorBall": "GitHub 历史数据镜像（MIT 许可）",
+            "scflcp.com.cn": "四川省福利彩票发行中心官方页面",
+        }
+        source_label = " + ".join(labels.get(source, source) for source in sources)
         now = datetime.now().astimezone().isoformat(timespec="seconds")
         database.set_meta("last_sync", now)
         database.set_meta("last_sync_mode", mode)
-        database.set_meta("last_sync_count", str(len(rows)))
-        return {"ok": True, "mode": mode, "fetched": len(rows), "upserted": changed,
-                "latest": database.latest_draw(), "last_sync": now,
-                "message": f"同步完成：获取 {len(rows)} 期，写入/更新 {changed} 条。"}
+        database.set_meta("last_sync_count", str(len(changed_rows)))
+        database.set_meta("source_label", source_label)
+        database.set_meta("sources", json.dumps(sources, ensure_ascii=False))
+        return {"ok": True, "mode": mode, "fetched": len(changed_rows), "upserted": changed,
+                "latest": database.latest_draw(), "last_sync": now, "source": source_label,
+                "message": f"同步完成：新增/修正 {len(changed_rows)} 期，数据库共 {database.count_draws()} 期。"}
     except SourceError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     except Exception as exc:
