@@ -17,6 +17,8 @@ on:
     paths:
       - "scripts/sync_edgeone_data.py"
       - "app/sources/cwl.py"
+      - "app/sources/github_mirror.py"
+      - "app/sources/sichuan_fucai.py"
       - ".github/workflows/sync-edgeone-data.yml"
 
 permissions:
