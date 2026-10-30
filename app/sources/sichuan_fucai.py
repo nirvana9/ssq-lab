@@ -90,8 +90,8 @@ def parse_sichuan_html(
 
     # Some page layouts render all ten draw cards first and the detailed
     # sales/pool blocks afterward. In that case, align those lists by page order.
-    sales_values = [re.sub(r"\\D", "", value) for value in SALES_RE.findall(text)]
-    pool_values = [re.sub(r"\\D", "", value) for value in POOL_RE.findall(text)]
+    sales_values = [re.sub(r"\D", "", value) for value in SALES_RE.findall(text)]
+    pool_values = [re.sub(r"\D", "", value) for value in POOL_RE.findall(text)]
     for index, record in enumerate(raw_records):
         if not record["sales"] and index < len(sales_values):
             record["sales"] = sales_values[index]
