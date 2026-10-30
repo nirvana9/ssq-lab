@@ -15,7 +15,9 @@ class EdgeOneDataTests(unittest.TestCase):
         from draws_data import DRAW_DATA
 
         self.assertEqual(DRAW_DATA["schema_version"], 1)
-        self.assertEqual(DRAW_DATA["source"], "cwl.gov.cn")
+        self.assertTrue(DRAW_DATA["source"])
+        self.assertTrue(DRAW_DATA["sources"])
+        self.assertTrue(DRAW_DATA["source_label"])
         self.assertIn("updated_at", DRAW_DATA)
         self.assertIn("latest_issue", DRAW_DATA)
         self.assertIsInstance(DRAW_DATA["draws"], list)
