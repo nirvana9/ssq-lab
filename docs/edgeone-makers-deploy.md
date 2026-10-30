@@ -57,8 +57,8 @@ GitHub Actions 工作流为 .github/workflows/sync-edgeone-data.yml。
 - 首次空数据会自动选择全量同步；也可以手动勾选 full_sync。
 - 增量同步向前回看 45 天，并按期号合并。
 - 只有数据变化才会提交新的 draws_data.py。
-- 优先使用中国福彩网官方接口；若 GitHub Actions 出口被官方站点返回 403，则切换到 500.com 第三方历史数据源。
-- 两个数据源都失败或返回无效数据时，工作流失败，不覆盖已有数据；每期记录保留实际 source 字段。
+- 优先使用中国福彩网官方接口；若 GitHub Actions 出口被官方站点返回 403，则使用 MIT 许可的 GitHub 历史镜像获取全量记录，并使用四川省福利彩票发行中心官网核对最近 10 期。
+- 官方接口与 GitHub 历史镜像都失败或返回无效数据时，工作流失败，不覆盖已有数据；四川福彩近期页不可用时保留已校验的历史镜像。每期记录保留实际 source 字段。
 
 工作流提交数据后，Makers 若已连接该分支，会自动触发对应环境重新部署。GitHub 定时任务可能延迟，不保证开奖后实时更新。
 
@@ -78,3 +78,6 @@ GitHub Actions 的 EdgeOne Makers verification 工作流会使用 Python 3.10 �
 ## 8. 尚需账户授权的步骤
 
 本仓库的代码适配、GitHub CI 和数据同步工作流不需要 EdgeOne 账号凭据。真正创建 Makers 项目、授权 GitHub 仓库和取得 Preview URL，需要项目所有者在 EdgeOne Makers 控制台完成一次授权。没有这一步，不应声称网站已上线。
+
+
+当前适配分支的数据包已同步 3,521 期，最新期号 2026124（开奖日期 2026-10-29）。历史镜像来源和 MIT 许可说明见仓库根目录 THIRD_PARTY_NOTICES.md。
