@@ -96,5 +96,16 @@ class EdgeOneApiTests(unittest.TestCase):
         self.assertGreater(backtest["sample_count"], 0)
 
 
+class EdgeOneStaticTests(unittest.TestCase):
+    def test_static_root_has_entrypoint_and_assets(self):
+        index = ROOT / "index.html"
+        self.assertTrue(index.is_file())
+        self.assertTrue((ROOT / "static" / "app.js").is_file())
+        self.assertTrue((ROOT / "static" / "style.css").is_file())
+        html = index.read_text(encoding="utf-8")
+        self.assertIn('/static/app.js', html)
+        self.assertIn('/static/style.css', html)
+
+
 if __name__ == "__main__":
     unittest.main()
